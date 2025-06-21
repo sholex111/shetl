@@ -1,1 +1,7 @@
 *test*
+*try*
+
+.env
+logs/
+__pycache__/
+
