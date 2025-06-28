@@ -1,0 +1,87 @@
+#docker-compose.yml
+
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: weather_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  airflow-webserver:
+    image: apache/airflow:2.9.1
+    depends_on:
+      - airflow-scheduler
+      - db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:${DB_PASSWORD}@db:5432/weather_db
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${SECRET_KEY}
+      PYTHONPATH: /opt/airflow:/usr/local/lib/python3.12/site-packages
+      API_KEY: ${API_KEY}
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
+      - ./requirements.txt:/requirements.txt
+      - ./.env:/opt/airflow/.env
+    command: >
+      bash -c "pip install -r /requirements.txt && airflow webserver"
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.1
+    depends_on:
+      - db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:${DB_PASSWORD}@db:5432/weather_db
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${SECRET_KEY}
+      PYTHONPATH: /opt/airflow:/usr/local/lib/python3.12/site-packages
+      API_KEY: ${API_KEY}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
+      - ./requirements.txt:/requirements.txt
+      - ./.env:/opt/airflow/.env
+    command: >
+      bash -c "pip install -r /requirements.txt && airflow scheduler"
+
+  airflow-init:
+    image: apache/airflow:2.9.1
+    depends_on:
+      - db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:${DB_PASSWORD}@db:5432/weather_db
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${SECRET_KEY}
+      PYTHONPATH: /opt/airflow:/usr/local/lib/python3.12/site-packages
+      API_KEY: ${API_KEY}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
+      - ./requirements.txt:/requirements.txt
+      - ./.env:/opt/airflow/.env
+    entrypoint: >
+      bash -c "pip install -r /requirements.txt &&
+               airflow db init &&
+               airflow users create --username airflow --password airflow --firstname Air --lastname Flow --role Admin --email admin@example.com"
+
+volumes:
+  pgdata:

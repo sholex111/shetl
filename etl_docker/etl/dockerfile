@@ -1,0 +1,15 @@
+# Dockerfile
+
+
+# Use the official Airflow image as base
+FROM apache/airflow:2.9.1
+
+# Set environment variable so Airflow can import custom Python packages
+ENV PYTHONPATH="${PYTHONPATH}:/opt/airflow"
+
+# Copy your local code into the image
+COPY ./etl /opt/airflow/etl
+COPY requirements.txt /requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /requirements.txt

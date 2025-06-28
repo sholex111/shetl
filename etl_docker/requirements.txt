@@ -1,0 +1,8 @@
+#requirements.txt
+
+requests
+psycopg2-binary
+python-dotenv
+pandas
+sqlalchemy
+
